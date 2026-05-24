@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — Echo by DataSutram{% endblock %}
+
+{% block head %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        overflow: hidden;
+    }
+    /* Subtle animated background orbs */
+    body::before, body::after {
+        content: '';
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.25;
+        pointer-events: none;
+        z-index: 0;
+    }
+    body::before {
+        width: 500px; height: 500px;
+        background: radial-gradient(circle, rgba(13,148,136,0.4) 0%, transparent 70%);
+        top: -100px; left: -100px;
+    }
+    body::after {
+        width: 400px; height: 400px;
+        background: radial-gradient(circle, rgba(20,184,166,0.3) 0%, transparent 70%);
+        bottom: -80px; right: -80px;
+    }
+    .app-container { position: relative; z-index: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrapper animate-fade-in">
+    <div class="login-card">
+        
+        <!-- Logo -->
+        <div class="login-logo-container">
+            <div class="login-logo-icon">
+                <!-- DataSutram 9-square grid icon (Echo branding) -->
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="3" y="3" width="4" height="4" rx="1"/>
+                    <rect x="10" y="3" width="4" height="4" rx="1"/>
+                    <rect x="17" y="3" width="4" height="4" rx="1"/>
+                    <rect x="3" y="10" width="4" height="4" rx="1"/>
+                    <rect x="10" y="10" width="4" height="4" rx="1"/>
+                    <rect x="17" y="10" width="4" height="4" rx="1"/>
+                    <rect x="3" y="17" width="4" height="4" rx="1"/>
+                    <rect x="10" y="17" width="4" height="4" rx="1"/>
+                    <rect x="17" y="17" width="4" height="4" rx="1"/>
+                </svg>
+            </div>
+            <h1 class="logo-text">Echo</h1>
+            <p class="logo-subtext">DATASUTRAM · Voice Intelligence Platform</p>
+        </div>
+
+        <form action="/login" method="POST" class="login-form" id="login-form">
+            <div class="form-group">
+                <label for="email" class="form-label">Corporate Email</label>
+                <div class="input-wrapper">
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        class="form-control"
+                        placeholder="name@datasutram.com"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <div class="input-wrapper">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-control"
+                        placeholder="••••••••"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+            </div>
+
+            {% if error %}
+            <div class="login-error-banner animate-shake">
+                <svg class="error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span class="error-message">{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary btn-block" id="btn-login">
+                <span>Sign In to Echo</span>
+                <svg class="btn-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                </svg>
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <p>Authorized DataSutram personnel only.</p>
+            <p>All sessions are monitored and logged for compliance.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
