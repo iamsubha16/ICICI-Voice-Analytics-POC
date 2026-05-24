@@ -1,15 +1,15 @@
-import os
 import json
 from openai import AzureOpenAI
 from app.config import Config
 
+
 def analyze_transcript(
     transcript: list,
+    lender_name: str,
+    loan_account: str,
     overdue_amount: float,
-    loan_type: str,
     d0_disposition: str,
     d0_notes: str,
-    filename: str
 ) -> dict:
     """
     Analyzes a diarized transcript using Azure OpenAI based on calling context and script compliance.
@@ -25,136 +25,141 @@ def analyze_transcript(
 
     print("Connecting to Azure OpenAI ChatCompletions...")
     client = AzureOpenAI(
-        api_key=Config.AZURE_OPENAI_API_KEY,
-        api_version="2023-12-01-preview",
-        azure_endpoint=Config.AZURE_OPENAI_ENDPOINT
+        api_key=Config.AZURE_OPENAI_API_KEY, api_version="2023-12-01-preview", azure_endpoint=Config.AZURE_OPENAI_ENDPOINT
     )
-    
+
     # Format the transcript for the LLM
     formatted_turns = []
     for turn in transcript:
         formatted_turns.append(f"[{turn.get('speaker', 'UNKNOWN')}]: {turn.get('text', '')}")
     transcript_str = "\n".join(formatted_turns)
-    
-    system_prompt = f"""You are an expert Quality Audit & Compliance AI specializing in banking and NBFC debt collections.
-Your task is to analyze a diarized transcript of an EMI recovery call, compare it against the bank's prescribed calling script, the tele-caller's self-reported disposition (D0), and the loan context. Output a highly detailed, structured, and compliant audit report in valid JSON.
 
-### Calling Context Provided:
+    json_schema_example = """
+  {
+      "disposition_verification": {
+        "ai_disposition": "PAID | PROMISE_TO_PAY | REFUSED | NOT_REACHABLE | DISPUTED | PARTIAL_COMMITMENT | UNCLEAR",
+        "bank_disposition": "PAID | PROMISE_TO_PAY | REFUSED | NOT_REACHABLE | DISPUTED",
+        "disposition_match": true,
+        "mismatch_severity": "NONE | MINOR | SIGNIFICANT | CRITICAL",
+        "mismatch_explanation": "Detailed validation explaining transcript statements versus the logged AI system disposition state",
+        "confidence_score": 0.95
+      },
+      "refusal_analysis": {
+        "payment_status": "AGREED | PARTIAL | DEFERRED | REFUSED | UNCLEAR",
+        "primary_reason": "FINANCIAL_HARDSHIP | DISPUTES_AMOUNT | ALREADY_PAID | WILL_PAY_LATER | JOB_LOSS | MEDICAL_EMERGENCY | UNRESPONSIVE | OTHER",
+        "reason_verbatim": "Direct quotation from transcript",
+        "secondary_reasons": ["String array of compounding friction points"],
+        "customer_sentiment": "COOPERATIVE | NEUTRAL | AGITATED | HOSTILE",
+        "escalation_risk": "LOW | MEDIUM | HIGH"
+      },
+      "agent_quality": {
+        "scores": {
+          "flow_correctness": 0.0,
+          "response_handling": 0.0,
+          "call_quality": 0.0,
+          "composite_score": 0.0
+        },
+        "stage_assessment": [
+          {
+            "stage_id": "A | B | C | D | E",
+            "stage_name": "Greeting & Identity Verification | Overdue Amount Statement | Consequence Nudge | Delay Reason Extraction & Objection Handling | Payment Commitment & Closing",
+            "status": "COMPLETED | PARTIALLY_COMPLETED | SKIPPED | IMPROVISED",
+            "observation": "Document specific actions taken by the Voice AI during this interaction slice.",
+            "deviation_note": "Detail missing elements if status isn't COMPLETED. Flag infractions such as violations of the Critical Number Rule, incorrect Hindi gender markers, full sentence echoing, or short-circuit script behaviors."
+          }
+        ],
+        "coaching_feedback": {
+          "strengths": ["List of engineering rules successfully executed by the LLM/TTS engine"],
+          "improvement_areas": ["List of algorithmic, programmatic, prompt, or linguistic gaps observed"],
+          "suggested_alternative": "Corrected script dialogue showing exactly how the automated voice agent should have responded to adhere to its core prompt constraints."
+        }
+      },
+      "call_intelligence": {
+        "call_summary": "Provide a 3-5 sentence neutral summary of the voice system transaction.",
+        "key_pain_points": ["System or customer friction items identified"],
+        "agent_missed_opportunities": ["Missed prompt protocols, failed language pivots, or bad SSML tag sequences"],
+        "notable_observations": ["Unique conversational anomalies, user behavior observations, or structural TTS glitches"],
+        "recommended_next_action": "Operational recommendations for the collections strategy team (e.g., issue human callback, trigger automated payment SMS link, flag for dispute review panel)",
+        "overall_feedback": "2-3 sentences evaluating the systemic effectiveness of the automated conversational agent during the interaction."
+      }
+    }
+  """
+
+    system_prompt = f"""
+# Voice AI Collections Quality Audit & Compliance Prompt
+
+You are an expert Quality Audit & Compliance AI specializing in banking and NBFC conversational AI applications. Your task is to analyze a diarized transcript of an automated Voice AI recovery call. You will cross-examine the transcript against the specific architectural guidelines of the Voice assistant prompt, the lender context, and the AI's post-call metadata logs.
+
+Output a highly detailed, structured, and legally compliant audit report in valid JSON.
+
+### Voice AI System Context Provided:
+- **Lender Name:** {lender_name}
 - **Prescribed Overdue Amount:** {overdue_amount} INR
-- **Loan Type:** {loan_type}
-- **Tele-caller Reported Disposition (D0):** {d0_disposition}
-- **Tele-caller Notes:** {d0_notes}
+- **Loan Account Number:** {loan_account}
+- **Voice AI Post-Call Logged Disposition (D0):** {d0_disposition}
+- **Voice AI Technical Logs/Notes:** {d0_notes}
 
-### Prescribed Calling Script
-The bank requires agents to follow these 5 stages in order:
-- **Stage A: Greeting & Identity Verification (ID: A):** Politely greet, verify customer name and account holder identity.
-- **Stage B: Overdue Amount Statement (ID: B):** Clearly state loan/EMI account, specify overdue amount in INR, and demand immediate payment.
-- **Stage C: Consequence Nudge (ID: C):** Explain credit score/CIBIL impact, late payment penalties, and potential legal escalations if unpaid.
-- **Stage D: Delay Reason Extraction & Objection Handling (ID: D):** Ask why customer is delaying, handle objections professionally, and offer solutions.
-- **Stage E: Payment Commitment & Closing (ID: E):** Secure concrete payment commitment (exact amount, exact date/time, channel), send payment SMS link, and close call.
+---
 
-### Linguistic Context (Hindi, English, Hinglish):
-Calls are frequently in Hinglish (code-switched Hindi-English) or conversational Hindi. You must apply the same audit rigour to translated meaning as you would to English text. Pay attention to colloquialisms and collection phrases:
-- `"dekh lenge" / "dekhate hain"`: Signals deflecting or stalling behavior. True outcome (D1) is "UNCLEAR" or "REFUSED", NOT "PROMISE_TO_PAY".
-- `"kal kar deta hoon"`: If said without a specific confirmed amount or clear intent, or if customer sounds defensive/unreliable, interpret as "PARTIAL_COMMITMENT" or "UNCLEAR".
-- `"settlement karo"`: Signals an active dispute regarding the amount. True outcome (D1) is "DISPUTED".
+### Part 1: Operational Compliance Standards
 
-### Analysis Tasks:
-1. **Disposition Verification:** Infer true outcome (D1) from transcript: PAID, PROMISE_TO_PAY, REFUSED, NOT_REACHABLE, DISPUTED, PARTIAL_COMMITMENT, UNCLEAR.
-   - Compare D1 with D0. Set `disposition_match` to true/false.
-   - Classify `mismatch_severity`: 
-     - `NONE`: D0 and D1 match perfectly.
-     - `MINOR`: Slight discrepancy, e.g. D1 is PARTIAL_COMMITMENT but agent logged PROMISE_TO_PAY.
-     - `SIGNIFICANT`: Intentional inflation of success, e.g. D1 is UNCLEAR (customer said "dekh lenge") but agent logged PROMISE_TO_PAY.
-     - `CRITICAL`: Direct violation, e.g. customer flatly refused (D1 is REFUSED) but agent logged PROMISE_TO_PAY.
-   - Provide a clear, analytical `mismatch_explanation`.
-   - Calculate `confidence_score` (0.0 to 1.0) based on signal clarity. Lower the score if there is code-switching ambiguity, audio cutouts (indicated in transcript), or mixed signals.
+#### 1. Script Progression Framework
+The system must guide the customer sequentially through 5 distinct ordered conversational stages:
+- **Stage A: Identity Verification (ID: A):** Greet from the organization, disclose recording warnings if needed, and strictly confirm the customer identity before revealing financial details.
+- **Stage B: Overdue Amount Statement (ID: B):** Explicitly mention the account/loan string, indicate that the EMI has bounced, specify the overdue balance, and push for a immediate/same-day payment.
+- **Stage C: Consequence Nudge (ID: C):** Apply targeted empathy or soft penalty friction (e.g., impact on credit health/CIBIL rating, additional late charge risks).
+- **Stage D: Delay Reason Extraction & Objection Handling (ID: D):** Professionally process why payment hasn't cleared, maintain active listening without mirroring full customer entries, and pivot back to the target.
+- **Stage E: Payment Commitment & Closing (ID: E):** Secure definite commitments (specific date/time/method) or handle standard polite termination loops (e.g., payment link confirmations, callbacks, or third-party exits).
 
-2. **Diarization Guard (Fallback):**
-   - If the transcript below lacks speaker labels (flat text), you must analyze conversational turn patterns, honorifics, and vocabulary (e.g. agent asks about money, customer complains of lack of funds) to infer speaker identities. Assign [AGENT] and [CUSTOMER] turns implicitly before executing compliance audits.
+#### 2. Critical Number & Technical Token Rules
+- **The Critical Number Rule:** ALL technical variables, financial integers, rupee balances, dates, specific clock times, and isolated numerals MUST be synthesized in **English words only**. This remains true even if the primary dialect of the turn switches to Hindi or Hinglish. Rupee strings must never be evaluated digit-by-digit.
+- **Loan Account Pronunciation:** Loan strings must be processed individually as isolated alphanumeric digits (e.g., "one two three") entirely in English.
 
-3. **Script Compliance Auditing (Flow & Premature Exits):**
-   - Score each stage (COMPLETED, PARTIALLY_COMPLETED, SKIPPED, IMPROVISED).
-   - Auditing Flow: If the agent skips crucial steps, mark them SKIPPED.
-   - **Premature Exit Auditing:** Specifically flag if the agent took a shortcut (e.g. customer refused or raised an objection in Stage B, and the agent jumped straight to closing and sending an SMS link in Stage E, completely skipping Stage D delay probing). Highlight this as a major deviation.
+#### 3. Bilingualism & Language Matching Rules
+- **Default State:** The Voice AI must introduce itself and begin conversations.
+- **Dynamic Matching:** The assistant must gracefully mirror language choices. If a customer explicitly transitions to Hindi or back to English, subsequent turns must match. However, isolated generic filler words (e.g., "okay," "yes," "EMI") do not qualify for a systemic language flip.
+- **Code-switching Boundaries:** The engine must avoid blending alternative linguistic systems mid-sentence (avoid raw syntactic code-mixing within a single thought structure).
+---
 
-4. **Escalation Risk:**
-   - Classify as `LOW`, `MEDIUM`, or `HIGH`.
-   - Set to `HIGH` if there is a severe dispute over the overdue amount, threats of legal action against the bank, regulatory complaints, or extremely hostile/agitated customer sentiment.
+### Part 2: Audit Analytics & Analysis Tasks
 
-### Few-Shot Mismatch Example:
-- **D0 (Agent logged):** PROMISE_TO_PAY
-- **Transcript excerpt:** 
-  - *AGENT:* Sir, apka Personal Loan EMI Rs. 15,000 overdue hai. Kab tak payment karenge?
-  - *CUSTOMER:* Haan bhaiya, dekh lenge. Kal parso dekhta hoon.
-  - *AGENT:* Okay sir, main payment link SMS kar raha hoon, payment kar dena. Thank you.
-- **Inferred D1:** UNCLEAR
-- **Mismatch Severity:** SIGNIFICANT
-- **Reasoning:** The customer deflected with "dekh lenge" (we'll see) and gave no specific date or amount. The agent logged PROMISE_TO_PAY anyway to meet targets. This is a premature exit and a significant mismatch.
+1. **Disposition Verification:** Infer the real-world operational result (**D1**) solely from the conversation flow: `PAID`, `PROMISE_TO_PAY`, `REFUSED`, `NOT_REACHABLE`, `DISPUTED`, `PARTIAL_COMMITMENT`, `UNCLEAR`.
+   - Contrast inferred D1 with logged D0 to flag system discrepancies (`disposition_match`: true/false).
+   - Evaluate `mismatch_severity`:
+     - `NONE`: Perfect alignment.
+     - `MINOR`: Micro-level variations (e.g., AI captures full `PROMISE_TO_PAY` but text reflects a `PARTIAL_COMMITMENT`).
+     - `SIGNIFICANT`: Misinterpreted deflection patterns (e.g., customer used stall tactics like *"dekh lenge" / "dekhate hain"* which implies an `UNCLEAR` state, but the AI flagged it as a firm commitment).
+     - `CRITICAL`: Direct operational failure (e.g., customer explicitly issued an account amount challenge / requested a settlement which implies `DISPUTED`, but the AI processed a default closing sequence).
+   - Compute an algorithmic `confidence_score` (0.0 to 1.0) tracking ambient acoustic markers or translation/code-switching ambiguities in the transcript text.
+
+2. **Diarization & Edge Condition Verification:** If the text document arrives as unstructured, flat lines without speaker indicators, parse internal honorific patterns and programmatic hooks to assign `[AGENT]` and `[CUSTOMER]` nodes implicitly before conducting audit pipelines.
+
+3. **Script Compliance Auditing (Flow & Short-Circuit Exits):**
+   - Rate each conversation chapter status: `COMPLETED`, `PARTIALLY_COMPLETED`, `SKIPPED`, `IMPROVISED`.
+   - **Short-Circuit Detection:** Audit for system processing shortcuts. Flag scenarios where the AI abruptly exited after a customer objection in Stage B, skipping directly to Stage E closing steps without assessing the core obstruction.
+
+4. **Escalation & Account Vulnerability Risk:**
+   - Rank vulnerabilities as `LOW`, `MEDIUM`, or `HIGH`.
+   - Escalate to `HIGH` if the customer exhibits extreme agitation, voices legal/regulatory pushback, triggers human-handoff overrides, or details a severe dispute.
+
+*IMPORTANT*: You must check if the call was disconnected mid-conversation. If the transcript ends abruptly without a proper closing, flag it as required.
+
+---
 
 ### Output JSON Format:
-Respond ONLY with a valid, parsable JSON object matching this schema:
-{{
-  "disposition_verification": {{
-    "ai_disposition": "PAID | PROMISE_TO_PAY | REFUSED | NOT_REACHABLE | DISPUTED | PARTIAL_COMMITMENT | UNCLEAR",
-    "bank_disposition": "PAID | PROMISE_TO_PAY | REFUSED | NOT_REACHABLE | DISPUTED",
-    "disposition_match": boolean,
-    "mismatch_severity": "NONE | MINOR | SIGNIFICANT | CRITICAL",
-    "mismatch_explanation": "Detailed explanation comparing transcript statements to logged disposition code",
-    "confidence_score": float
-  }},
-  "refusal_analysis": {{
-    "payment_status": "AGREED | PARTIAL | DEFERRED | REFUSED | UNCLEAR",
-    "primary_reason": "FINANCIAL_HARDSHIP | DISPUTES_AMOUNT | ALREADY_PAID | WILL_PAY_LATER | JOB_LOSS | MEDICAL_EMERGENCY | UNRESPONSIVE | OTHER",
-    "reason_verbatim": "Direct quotation from transcript",
-    "secondary_reasons": ["string"],
-    "customer_sentiment": "COOPERATIVE | NEUTRAL | AGITATED | HOSTILE",
-    "escalation_risk": "LOW | MEDIUM | HIGH"
-  }},
-  "agent_quality": {{
-    "scores": {{
-      "flow_correctness": float,
-      "response_handling": float,
-      "call_quality": float,
-      "composite_score": float
-    }},
-    "stage_assessment": [
-      {{
-        "stage_id": "A | B | C | D | E",
-        "stage_name": "Greeting & Identity Verification | Overdue Amount Statement | Consequence Nudge | Delay Reason Extraction & Objection Handling | Payment Commitment & Closing",
-        "status": "COMPLETED | PARTIALLY_COMPLETED | SKIPPED | IMPROVISED",
-        "observation": "Specific agent actions during this stage",
-        "deviation_note": "If status is not COMPLETED, details of what script stage elements were missed or incorrect"
-      }}
-    ],
-    "coaching_feedback": {{
-      "strengths": ["string"],
-      "improvement_areas": ["string"],
-      "suggested_alternative": "Dialogue script of how the agent should have handled the customer's specific refusal/objection"
-    }}
-  }},
-  "call_intelligence": {{
-    "call_summary": "3-5 sentences neutral summary",
-    "key_pain_points": ["string"],
-    "agent_missed_opportunities": ["string"],
-    "notable_observations": ["string"],
-    "recommended_next_action": "Actionable collections next step",
-    "overall_feedback": "2-3 sentences call efficacy feedback"
-  }}
-}}"""
+Respond ONLY with a valid, parsable JSON object matching this schema. Do not include markdown formatting except wrapping the raw payload block.
+{json_schema_example}
+"""
 
     user_prompt = f"Please audit the following transcript of an recovery call:\n\n{transcript_str}"
-    
+
     response = client.chat.completions.create(
         model=Config.AZURE_OPENAI_DEPLOYMENT_NAME,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
+        messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
         temperature=0.1,
-        response_format={"type": "json_object"}
+        response_format={"type": "json_object"},
     )
-    
+
     response_text = response.choices[0].message.content
     print("Azure OpenAI audit completed successfully.")
     return json.loads(response_text)

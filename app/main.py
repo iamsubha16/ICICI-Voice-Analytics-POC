@@ -27,6 +27,7 @@ os.makedirs(os.path.join(STATIC_DIR, "samples"), exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
+
 # ============================================================
 # Helper: no-cache headers for authenticated pages
 # ============================================================
@@ -42,14 +43,13 @@ def _no_cache_headers(response):
 # Page Routes
 # ============================================================
 
+
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard(request: Request):
     user = get_current_user_redirect(request)
     if not user:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
-    response = templates.TemplateResponse(
-        request=request, name="index.html", context={"user": user}
-    )
+    response = templates.TemplateResponse(request=request, name="index.html", context={"user": user})
     return _no_cache_headers(response)
 
 
@@ -58,31 +58,21 @@ async def get_login_page(request: Request):
     user = get_current_user_redirect(request)
     if user:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    return templates.TemplateResponse(
-        request=request, name="login.html", context={"error": None}
-    )
+    return templates.TemplateResponse(request=request, name="login.html", context={"error": None})
 
 
 @app.post("/login")
-async def handle_login(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...)
-):
+async def handle_login(request: Request, email: str = Form(...), password: str = Form(...)):
     # Verify email
     if email.strip().lower() != Config.LOGIN_EMAIL.strip().lower():
         return templates.TemplateResponse(
-            request=request,
-            name="login.html",
-            context={"error": "Invalid email address or credentials."}
+            request=request, name="login.html", context={"error": "Invalid email address or credentials."}
         )
 
     # Verify password hash
     if not verify_password(password, Config.LOGIN_PASSWORD_HASH):
         return templates.TemplateResponse(
-            request=request,
-            name="login.html",
-            context={"error": "Invalid password. Access denied."}
+            request=request, name="login.html", context={"error": "Invalid password. Access denied."}
         )
 
     # Valid credentials — set session cookie, redirect to dashboard
@@ -93,7 +83,7 @@ async def handle_login(
         value=session_id,
         httponly=True,
         max_age=3600 * 12,  # 12 hours
-        samesite="lax"
+        samesite="lax",
     )
     return response
 
@@ -116,6 +106,7 @@ async def handle_logout():
 # Auth Check (lightweight — called by frontend on page load)
 # ============================================================
 
+
 @app.get("/api/auth-check")
 async def auth_check(request: Request):
     """
@@ -126,16 +117,14 @@ async def auth_check(request: Request):
     """
     session_cookie = request.cookies.get("session_id")
     if not session_cookie or not verify_session(session_cookie):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session expired or invalid"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired or invalid")
     return JSONResponse({"ok": True})
 
 
 # ============================================================
 # Call History API
 # ============================================================
+
 
 @app.get("/api/calls/history")
 async def get_call_history(request: Request):
@@ -154,15 +143,18 @@ async def get_call_history(request: Request):
             continue
 
         report = job.get("report") or {}
-        history.append({
-            "call_id":      call_id,
-            "agent_id":     report.get("agent_id", "—"),
-            "customer_id":  report.get("customer_id", "—"),
-            "loan_type":    report.get("loan_type", "—"),
-            "overdue_amount": report.get("overdue_amount", 0),
-            "processed_at": report.get("processed_at", ""),
-            "disposition":  report.get("disposition_verification", {}).get("ai_disposition", "—"),
-        })
+        history.append(
+            {
+                "call_id": call_id,
+                "agent_id": report.get("agent_id", "—"),
+                "customer_id": report.get("customer_id", "—"),
+                "lender_name": report.get("lender_name", "—"),
+                "loan_account": report.get("loan_account", "—"),
+                "overdue_amount": report.get("overdue_amount", 0),
+                "processed_at": report.get("processed_at", ""),
+                "disposition": report.get("disposition_verification", {}).get("ai_disposition", "—"),
+            }
+        )
 
     # Most recent first
     history.sort(key=lambda x: x.get("processed_at") or "", reverse=True)
@@ -172,6 +164,7 @@ async def get_call_history(request: Request):
 # ============================================================
 # Core Analysis API
 # ============================================================
+
 
 @app.post("/api/analyze")
 async def analyze_call(
@@ -183,10 +176,11 @@ async def analyze_call(
     disposition_code: str = Form(...),
     disposition_notes: str = Form(""),
     call_datetime: str = Form(...),
-    loan_type: str = Form(...),
+    lender_name: str = Form(...),
+    loan_account: str = Form(...),
     overdue_amount: float = Form(...),
     audio_file: UploadFile = File(None),
-    sample_file: str = Form(None)
+    sample_file: str = Form(None),
 ):
     # Verify authentication
     session_cookie = request.cookies.get("session_id")
@@ -205,7 +199,7 @@ async def analyze_call(
         filename = sample_file
         audio_path = os.path.join(STATIC_DIR, "samples", sample_file)
         if not os.path.exists(audio_path):
-            with open(audio_path, 'wb') as f:
+            with open(audio_path, "wb") as f:
                 f.write(b"MOCK_AUDIO_BUFFER")
     else:
         if not audio_file or not audio_file.filename:
@@ -226,10 +220,11 @@ async def analyze_call(
         disposition_code,
         disposition_notes,
         call_datetime,
-        loan_type,
+        lender_name,
+        loan_account,
         overdue_amount,
         audio_path,
-        filename
+        filename,
     )
 
     return JSONResponse({"call_id": call_id})
