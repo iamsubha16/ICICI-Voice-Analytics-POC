@@ -625,15 +625,16 @@ function renderAuditReport(report) {
 
 	document.getElementById("gauge-composite").textContent = scores.composite_score || "—";
 
-	const flowVal = Math.round((scores.flow_correctness || 0) * 10);
+	// Scores are floats in [0,1] from the LLM — multiply by 100 to render bar width as a percentage.
+	const flowVal = Math.round((scores.flow_correctness || 0) * 100);
 	document.getElementById("gauge-flow").textContent = (scores.flow_correctness || 0) + "/1";
 	document.getElementById("slider-flow-fill").style.width = flowVal + "%";
 
-	const handVal = Math.round((scores.response_handling || 0) * 10);
+	const handVal = Math.round((scores.response_handling || 0) * 100);
 	document.getElementById("gauge-handling").textContent = (scores.response_handling || 0) + "/1";
 	document.getElementById("slider-handling-fill").style.width = handVal + "%";
 
-	const qualVal = Math.round((scores.call_quality || 0) * 10);
+	const qualVal = Math.round((scores.call_quality || 0) * 100);
 	document.getElementById("gauge-quality").textContent = (scores.call_quality || 0) + "/1";
 	document.getElementById("slider-quality-fill").style.width = qualVal + "%";
 
