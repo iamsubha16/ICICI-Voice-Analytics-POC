@@ -79,31 +79,30 @@ function renderCallHistory(calls) {
 	container.innerHTML = "";
 
 	if (!calls || calls.length === 0) {
-		// Empty state
 		container.innerHTML = `
-            <div class="empty-calls-state animate-fade-in">
-                <div class="empty-calls-icon">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                    </svg>
-                </div>
-                <p class="empty-title">No previous call records</p>
-                <p class="empty-subtitle">
-                    Upload a call recording using the form on the left to run your first compliance audit.
-                    Completed analyses will appear here.
-                </p>
-            </div>
+            <tr>
+                <td colspan="6" class="td-empty">
+                    <div class="empty-calls-state animate-fade-in">
+                        <div class="empty-calls-icon">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                            </svg>
+                        </div>
+                        <p class="empty-title">No previous call records</p>
+                        <p class="empty-subtitle">Click <strong>New Analysis</strong> to upload a call recording and run your first compliance audit.</p>
+                    </div>
+                </td>
+            </tr>
         `;
 		return;
 	}
 
 	calls.forEach((call, idx) => {
-		const card = document.createElement("div");
-		card.className = "call-history-card animate-fade-in";
-		card.style.animationDelay = `${idx * 0.05}s`;
-		card.setAttribute("data-call-id", call.call_id);
-		card.onclick = () => loadHistoryReport(call.call_id);
+		const row = document.createElement("tr");
+		row.className = "call-history-row animate-fade-in";
+		row.style.animationDelay = `${idx * 0.04}s`;
+		row.setAttribute("data-call-id", call.call_id);
 
 		// Format date
 		let dateStr = "—";
@@ -114,30 +113,20 @@ function renderCallHistory(calls) {
 					d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) +
 					", " +
 					d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-			} catch (_) {}
+			} catch (_) { }
 		}
 
-		// Disposition badge color
 		const dispColor = getDispositionBadgeClass(call.disposition);
-		const initials = (call.customer_id || "??")
-			.replace(/[^a-zA-Z0-9]/g, "")
-			.slice(0, 2)
-			.toUpperCase();
 
-		card.innerHTML = `
-            <div class="call-hist-left">
-                <div class="call-hist-avatar">${initials}</div>
-                <div class="call-hist-info">
-                    <div class="call-hist-id">${call.customer_id || call.call_id}</div>
-                    <div class="call-hist-meta">${call.call_id} · ${call.loan_account || call.lender_name || "—"}</div>
-                </div>
-            </div>
-            <div class="call-hist-right">
-                <div class="call-hist-time">${dateStr}</div>
-                <span class="badge ${dispColor}">${call.disposition || "—"}</span>
-            </div>
+		row.innerHTML = `
+            <td class="td-time">${dateStr}</td>
+            <td><span style="font-weight:600">${call.customer_id || "—"}</span></td>
+            <td class="td-id">${call.call_id || "—"}</td>
+            <td>${call.agent_id || "—"}</td>
+            <td><span class="badge ${dispColor}">${call.disposition || "—"}</span></td>
+            <td><button class="btn-view-record" onclick="loadHistoryReport('${call.call_id}')">VIEW</button></td>
         `;
-		container.appendChild(card);
+		container.appendChild(row);
 	});
 }
 
@@ -153,10 +142,10 @@ function getDispositionBadgeClass(disposition) {
 }
 
 function loadHistoryReport(callId) {
-	// Mark card as active
-	document.querySelectorAll(".call-history-card").forEach((c) => c.classList.remove("active-call"));
-	const card = document.querySelector(`[data-call-id="${callId}"]`);
-	if (card) card.classList.add("active-call");
+	// Mark row as active
+	document.querySelectorAll(".call-history-row").forEach((r) => r.classList.remove("active-call"));
+	const row = document.querySelector(`[data-call-id="${callId}"]`);
+	if (row) row.classList.add("active-call");
 
 	// Show the report view from JOBS_STORE via the status endpoint
 	fetch(`/api/status/${callId}`, { credentials: "same-origin" })
@@ -188,8 +177,12 @@ function showDashboardView() {
 	document.getElementById("header-breadcrumb").style.display = "none";
 	document.getElementById("nav-dashboard-btn").classList.add("active");
 
-	// Clear active card selection
-	document.querySelectorAll(".call-history-card").forEach((c) => c.classList.remove("active-call"));
+	// Show New Analysis header button
+	const btnNew = document.getElementById("btn-new-analysis");
+	if (btnNew) btnNew.classList.remove("hidden");
+
+	// Clear active row selection
+	document.querySelectorAll(".call-history-row").forEach((r) => r.classList.remove("active-call"));
 }
 
 function showReportView() {
@@ -199,26 +192,18 @@ function showReportView() {
 
 	// Show breadcrumb
 	document.getElementById("header-breadcrumb").style.display = "flex";
+
+	// Hide New Analysis header button — not relevant on the report page
+	const btnNew = document.getElementById("btn-new-analysis");
+	if (btnNew) btnNew.classList.add("hidden");
 }
 
 function refreshCurrentReport() {
-	// Re-fetch and re-render the current call report (if any)
-	const activeCard = document.querySelector(".call-history-card.active-call");
-	if (activeCard) {
-		const callId = activeCard.getAttribute("data-call-id");
+	const activeRow = document.querySelector(".call-history-row.active-call");
+	if (activeRow) {
+		const callId = activeRow.getAttribute("data-call-id");
 		if (callId) loadHistoryReport(callId);
 	}
-}
-
-function copyReportLink() {
-	navigator.clipboard.writeText(window.location.href).then(() => {
-		const btn = document.querySelector(".btn-copy-link");
-		const origText = btn.innerHTML;
-		btn.innerHTML = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="height:0.8rem;width:0.8rem"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!`;
-		setTimeout(() => {
-			btn.innerHTML = origText;
-		}, 1800);
-	});
 }
 
 // ============================================================
@@ -281,6 +266,7 @@ function setFileInInput(file) {
 let currentCallId = null;
 let pollInterval = null;
 let renderedLogsCount = 0;
+let pipelineStartTime = null;
 
 function triggerAudit(event) {
 	event.preventDefault();
@@ -306,6 +292,7 @@ function triggerAudit(event) {
 	resetProcessingSteps();
 	document.getElementById("terminal-console-logs").innerHTML = "";
 	renderedLogsCount = 0;
+	pipelineStartTime = Date.now();
 
 	// Submit via AJAX
 	fetch("/api/analyze", {
@@ -336,9 +323,46 @@ function triggerAudit(event) {
 function resetProcessingSteps() {
 	document.getElementById("current-step-label").textContent = "Audio Validation & Preprocessing...";
 	document.getElementById("progress-percentage-label").textContent = "0%";
+	document.getElementById("progress-eta-label").textContent = "Estimating…";
+	const fill = document.getElementById("progress-bar-fill");
+	if (fill) fill.style.width = "0%";
+
+	// Collapse logs back to default closed state
+	const wrap = document.getElementById("terminal-logs-wrapper");
+	const btn = document.getElementById("btn-toggle-logs");
+	const lbl = document.getElementById("logs-toggle-label");
+	if (wrap) wrap.classList.add("hidden");
+	if (btn) btn.classList.remove("expanded");
+	if (lbl) lbl.textContent = "Show system logs";
+
 	document.querySelectorAll(".step-node").forEach((n) => (n.className = "step-node"));
 	document.querySelectorAll(".step-connector").forEach((c) => (c.className = "step-connector"));
 	document.getElementById("step-node-1").classList.add("active");
+}
+
+function formatEta(seconds) {
+	if (!isFinite(seconds) || seconds <= 0) return "Almost done…";
+	const s = Math.round(seconds);
+	if (s < 60) return `~${s}s remaining`;
+	const m = Math.floor(s / 60);
+	const rem = s % 60;
+	return rem === 0 ? `~${m}m remaining` : `~${m}m ${rem}s remaining`;
+}
+
+function toggleSystemLogs() {
+	const wrap = document.getElementById("terminal-logs-wrapper");
+	const btn = document.getElementById("btn-toggle-logs");
+	const lbl = document.getElementById("logs-toggle-label");
+	const isHidden = wrap.classList.contains("hidden");
+	if (isHidden) {
+		wrap.classList.remove("hidden");
+		btn.classList.add("expanded");
+		lbl.textContent = "Hide system logs";
+	} else {
+		wrap.classList.add("hidden");
+		btn.classList.remove("expanded");
+		lbl.textContent = "Show system logs";
+	}
 }
 
 function pollPipelineStatus() {
@@ -359,6 +383,24 @@ function pollPipelineStatus() {
 			const progress = data.status;
 			document.getElementById("progress-percentage-label").textContent = `${progress}%`;
 			document.getElementById("current-step-label").textContent = data.step;
+
+			// Drive animated progress bar
+			const fill = document.getElementById("progress-bar-fill");
+			if (fill) fill.style.width = `${progress}%`;
+
+			// ETA from elapsed-vs-progress linear extrapolation
+			const etaLabel = document.getElementById("progress-eta-label");
+			if (etaLabel) {
+				if (progress >= 100) {
+					etaLabel.textContent = "Done";
+				} else if (progress < 5 || !pipelineStartTime) {
+					etaLabel.textContent = "Estimating…";
+				} else {
+					const elapsed = (Date.now() - pipelineStartTime) / 1000;
+					const remaining = elapsed * ((100 - progress) / progress);
+					etaLabel.textContent = formatEta(remaining);
+				}
+			}
 
 			// Append new terminal logs
 			const consoleLogs = document.getElementById("terminal-console-logs");
@@ -460,23 +502,41 @@ function renderAuditReport(report) {
 	accountBadge.textContent = report.loan_account || "—";
 	badgesEl.appendChild(accountBadge);
 
-	// Meta fields (agent = phone/call_id, call_id = initiated by, lender/account = reference)
+	// Meta fields
 	document.getElementById("val-agent-id").textContent = report.agent_id || "—";
 	document.getElementById("val-call-id").textContent = report.call_id || "—";
 	document.getElementById("val-lender-name").textContent = report.lender_name || "—";
 	document.getElementById("val-loan-account").textContent = report.loan_account || "—";
 
-	// Overdue amount (shown in disposition pill area)
-	const overdue = parseFloat(report.overdue_amount || 0);
-	document.getElementById("report-disposition-pill").textContent =
-		"DISPOSITION  " + (report.disposition_verification?.ai_disposition || "—");
+	// Call Date & Time (formatted human-readable)
+	let callDtStr = "—";
+	if (report.call_datetime) {
+		try {
+			const d = new Date(report.call_datetime);
+			if (!isNaN(d.getTime())) {
+				callDtStr =
+					d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) +
+					", " +
+					d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+			} else {
+				callDtStr = report.call_datetime;
+			}
+		} catch (_) {
+			callDtStr = report.call_datetime;
+		}
+	}
+	document.getElementById("val-call-datetime").textContent = callDtStr;
+
+	// Inferred disposition (value-only — label is static in HTML).
+	// Read new field name first; fall back to legacy `ai_disposition` for reports
+	// generated before the schema rename so already-stored audits still render.
+	const dispoHeader = report.disposition_verification || {};
+	document.getElementById("dispo-pill-value").textContent =
+		dispoHeader.d1_inferred_disposition || dispoHeader.ai_disposition || "—";
 
 	// ---- TAB 1: CALL INTELLIGENCE ----
 	const intel = report.call_intelligence || {};
 	document.getElementById("report-summary-text").textContent = intel.call_summary || "No summary available.";
-
-	// Transcript preview (first 5 turns shown in summary tab)
-	renderTranscriptTurns("transcript-preview-turns", report.transcript || [], 5);
 
 	// Pain Points
 	const painContainer = document.getElementById("report-pain-points");
@@ -515,9 +575,13 @@ function renderAuditReport(report) {
 	document.getElementById("report-overall-feedback").textContent = intel.overall_feedback || "Compliance audit complete.";
 
 	// ---- TAB 2: DISPOSITION AUDIT ----
+	// New field names take precedence; legacy names kept as fallback for reports
+	// already sitting in JOBS_STORE from before the schema rename.
 	const dispo = report.disposition_verification || {};
-	document.getElementById("audit-d0-value").textContent = dispo.bank_disposition || "—";
-	document.getElementById("audit-d1-value").textContent = dispo.ai_disposition || "—";
+	document.getElementById("audit-d0-value").textContent =
+		dispo.d0_logged_disposition || dispo.bank_disposition || "—";
+	document.getElementById("audit-d1-value").textContent =
+		dispo.d1_inferred_disposition || dispo.ai_disposition || "—";
 	document.getElementById("audit-mismatch-explanation").textContent = dispo.mismatch_explanation || "Disposition verified.";
 
 	const conf = Math.round((dispo.confidence_score || 0.9) * 100);
@@ -617,7 +681,8 @@ function renderAuditReport(report) {
 	});
 	if (!improveContainer.innerHTML) improveContainer.innerHTML = "<li class='text-green'>Perfect compliance! No improvements needed.</li>";
 
-	document.getElementById("coaching-alternative").textContent = coaching.suggested_alternative || "Coaching dialogues up to date.";
+	// HIDDEN: Coaching Alternative Script / Suggested Dialogue (matching HTML block in index.html is commented out).
+	// document.getElementById("coaching-alternative").textContent = coaching.suggested_alternative || "Coaching dialogues up to date.";
 
 	// Always start on Call Intelligence tab
 	switchReportTab("tab-call-intel");
@@ -681,24 +746,24 @@ function toggleStageDetails(idx) {
 }
 
 function switchReportTab(tabId) {
-	// Update tab button states
-	const tabNames = {
-		"tab-call-intel": "Call Intelligence",
-		"tab-dispo-audit": "Disposition Audit",
-		"tab-transcript": "Transcript",
-		"tab-script-timeline": "Script Timeline",
-		"tab-coaching": "Coaching Corner",
-	};
-
+	// Highlight the active tab button via data-tab attribute (robust against label changes)
 	document.querySelectorAll(".nav-tab-btn").forEach((btn) => {
-		btn.classList.remove("active");
-		if (btn.textContent.trim() === tabNames[tabId]) {
-			btn.classList.add("active");
-		}
+		btn.classList.toggle("active", btn.getAttribute("data-tab") === tabId);
 	});
 
 	// Show/hide panels
 	document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
 	const target = document.getElementById(tabId);
 	if (target) target.classList.remove("hidden");
+}
+
+// ============================================================
+// 10. FORM PANEL TOGGLE (FAB + Chevron)
+// ============================================================
+function openFormPanel() {
+	document.getElementById("dashboard-body").classList.add("panel-open");
+}
+
+function closeFormPanel() {
+	document.getElementById("dashboard-body").classList.remove("panel-open");
 }

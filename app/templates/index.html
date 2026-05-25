@@ -42,20 +42,15 @@
 			</nav>
 		</div>
 
-		<!-- Right: Credits + Env + Sign Out -->
+		<!-- Right: New Analysis CTA + Env + Sign Out -->
 		<div class="header-right">
-			<!-- Credit counter -->
-			<div class="credit-badge" id="credit-badge">
-				<svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"
-					/>
+			<!-- New Analysis CTA — hidden in report view -->
+			<button class="btn-header-new-analysis" id="btn-new-analysis" onclick="openFormPanel()">
+				<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
 				</svg>
-				<span id="credit-display">— / —</span>
-			</div>
+				New Analysis
+			</button>
 
 			<!-- Environment pill -->
 			<span class="env-pill">PROD</span>
@@ -95,14 +90,23 @@
 <!-- ====================================================
      MAIN DASHBOARD BODY
      ==================================================== -->
-<main class="dashboard-body animate-fade-in">
+<main class="dashboard-body animate-fade-in" id="dashboard-body">
 	<!-- ================================================
          LEFT PANEL — Ingestion Form
          ================================================ -->
 	<section class="control-panel-sidebar">
 		<div class="control-card form-card">
-			<p class="card-subtitle">New Analysis</p>
-			<h3 class="card-title-main">Ingestion Form</h3>
+			<div class="form-card-header-row">
+				<div>
+					<p class="card-subtitle">New Analysis</p>
+					<h3 class="card-title-main">Ingestion Form</h3>
+				</div>
+				<button class="panel-collapse-btn" id="btn-collapse-panel" onclick="closeFormPanel()" title="Collapse panel">
+					<svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+					</svg>
+				</button>
+			</div>
 
 			<form id="audit-form" onsubmit="triggerAudit(event)">
 				<input type="hidden" id="sample_file" name="sample_file" value="" />
@@ -140,7 +144,7 @@
 				</div>
 
 				<!-- Section: Account Info -->
-				<p class="form-section-label" style="margin-top: 0.25rem">Lender & Disposition</p>
+				<p class="form-section-label">Lender & Disposition</p>
 
 				<div class="form-grid-2">
 					<div class="form-group">
@@ -282,9 +286,23 @@
 				</button>
 			</div>
 
-			<!-- Call History List (populated by JS) -->
-			<div id="call-history-container" class="call-history-list">
-				<!-- Populated dynamically by JS -->
+			<!-- Call History Table (populated by JS) -->
+			<div class="call-history-table-wrapper">
+				<table class="call-history-table">
+					<thead>
+						<tr>
+							<th>Time</th>
+							<th>Customer</th>
+							<th>Call ID</th>
+							<th>Agent</th>
+							<th>Disposition</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody id="call-history-container">
+						<!-- Populated dynamically by JS -->
+					</tbody>
+				</table>
 			</div>
 		</div>
 
@@ -292,7 +310,7 @@
              VIEW: PROCESSING (PIPELINE RUNNING)
              ============================================ -->
 		<div id="view-processing" class="deck-card processing-view hidden animate-fade-in">
-			<div>
+			<div class="proc-header">
 				<h2 class="deck-title font-outfit">Running Analytics Pipeline</h2>
 				<p class="deck-subtitle text-secondary" id="current-step-label">Audio Validation & Preprocessing...</p>
 			</div>
@@ -320,14 +338,29 @@
 				</div>
 			</div>
 
-			<!-- Spinner -->
-			<div class="loader-container">
-				<div class="glossy-spinner"></div>
-				<div class="loader-numeric" id="progress-percentage-label">0%</div>
+			<!-- Animated progress bar + status meta -->
+			<div class="proc-progress-section">
+				<div class="proc-progress-track">
+					<div class="proc-progress-fill" id="progress-bar-fill"></div>
+				</div>
+				<div class="proc-progress-meta">
+					<span class="proc-progress-pct" id="progress-percentage-label">0%</span>
+					<span class="proc-progress-eta" id="progress-eta-label">Estimating…</span>
+				</div>
 			</div>
 
-			<!-- Terminal Console -->
-			<div class="terminal-logs-wrapper">
+			<!-- Opt-in system logs -->
+			<div class="proc-logs-toggle">
+				<button type="button" class="btn-toggle-logs" id="btn-toggle-logs" onclick="toggleSystemLogs()">
+					<svg id="logs-toggle-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="12" height="12">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+					</svg>
+					<span id="logs-toggle-label">Show system logs</span>
+				</button>
+			</div>
+
+			<!-- Terminal Console (hidden by default) -->
+			<div class="terminal-logs-wrapper hidden" id="terminal-logs-wrapper">
 				<div class="terminal-header">
 					<div class="terminal-dots">
 						<span class="dot-r"></span>
@@ -431,72 +464,53 @@
 							<span class="meta-value" id="val-loan-account">—</span>
 						</div>
 					</div>
+					<div class="meta-field">
+						<svg class="meta-field-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+						</svg>
+						<div class="meta-field-body">
+							<span class="meta-label">Call Date &amp; Time</span>
+							<span class="meta-value" id="val-call-datetime">—</span>
+						</div>
+					</div>
 				</div>
 
 				<div class="report-actions-row">
-					<div class="disposition-pill" id="report-disposition-pill">DISPOSITION —</div>
-					<button class="btn-copy-link" onclick="copyReportLink()">
-						<svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-							/>
-						</svg>
-						Copy link
-					</button>
+					<div class="disposition-pill" id="report-disposition-pill">
+						<span class="dispo-pill-label">Inferred Disposition</span>
+						<span class="dispo-pill-sep">:</span>
+						<span class="dispo-pill-value" id="dispo-pill-value">—</span>
+					</div>
 				</div>
 			</div>
 
 			<!-- Tabs -->
 			<nav class="report-nav-tabs">
-				<button class="nav-tab-btn active" onclick="switchReportTab('tab-call-intel')">Call Intelligence</button>
-				<button class="nav-tab-btn" onclick="switchReportTab('tab-dispo-audit')">Disposition Audit</button>
-				<button class="nav-tab-btn" onclick="switchReportTab('tab-transcript')">Transcript</button>
-				<button class="nav-tab-btn" onclick="switchReportTab('tab-script-timeline')">Transcript Audit</button>
-				<button class="nav-tab-btn" onclick="switchReportTab('tab-coaching')">Coaching Corner</button>
+				<button class="nav-tab-btn active" data-tab="tab-call-intel" onclick="switchReportTab('tab-call-intel')">Call Intelligence</button>
+				<button class="nav-tab-btn" data-tab="tab-dispo-audit" onclick="switchReportTab('tab-dispo-audit')">Disposition Audit</button>
+				<button class="nav-tab-btn" data-tab="tab-transcript" onclick="switchReportTab('tab-transcript')">Transcript</button>
+				<button class="nav-tab-btn" data-tab="tab-script-timeline" onclick="switchReportTab('tab-script-timeline')">Transcript Audit</button>
+				<button class="nav-tab-btn" data-tab="tab-coaching" onclick="switchReportTab('tab-coaching')">Coaching Corner</button>
 			</nav>
 
 			<!-- Tab Contents -->
 			<div class="report-content-deck">
 				<!-- TAB 1: CALL INTELLIGENCE -->
 				<div id="tab-call-intel" class="tab-panel animate-fade-in">
-					<!-- Summary + Transcript side by side (matching Echo screenshot) -->
-					<div class="summary-transcript-grid">
-						<!-- Summary block -->
-						<div class="intel-summary-card">
-							<div class="section-block-header">
-								<svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-									/>
-								</svg>
-								<span class="section-block-title">Summary</span>
-							</div>
-							<p class="summary-para-text" id="report-summary-text">Loading...</p>
+					<!-- Summary (transcript lives in its own dedicated tab) -->
+					<div class="intel-summary-card">
+						<div class="section-block-header">
+							<svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+								/>
+							</svg>
+							<span class="section-block-title">Summary</span>
 						</div>
-
-						<!-- Live Transcript Preview (read-only first 5 turns) -->
-						<div class="intel-summary-card">
-							<div class="section-block-header">
-								<svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-									/>
-								</svg>
-								<span class="section-block-title">Transcript</span>
-							</div>
-							<div class="transcript-chat-container" id="transcript-preview-turns" style="max-height: 220px">
-								<!-- preview turns injected by JS -->
-							</div>
-						</div>
+						<p class="summary-para-text" id="report-summary-text">Loading...</p>
 					</div>
 
 					<div class="dashboard-double-row">
@@ -625,6 +639,10 @@
 							<ul class="clean-bullet-list text-warning-bullets" id="coaching-improvements"></ul>
 						</div>
 					</div>
+					<!--
+					HIDDEN: Coaching Alternative Script / Suggested Dialogue section.
+					Hidden per product decision (May 2026). Restore by uncommenting this block
+					and uncommenting the matching `coaching-alternative` write in main.js.
 					<div class="suggested-script-card border-teal-glow mt-4">
 						<div class="card-suggest-header">
 							<span class="suggest-badge">COACHING ALTERNATIVE SCRIPT</span>
@@ -632,6 +650,8 @@
 						</div>
 						<blockquote class="glossy-blockquote" id="coaching-alternative"></blockquote>
 					</div>
+					-->
+
 				</div>
 			</div>
 			<!-- /.report-content-deck -->
@@ -639,6 +659,7 @@
 		<!-- /#view-report -->
 	</section>
 </main>
+
 {% endblock %} {% block scripts %}
 <script src="/static/js/main.js"></script>
 {% endblock %}

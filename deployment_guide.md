@@ -123,6 +123,8 @@ If you want to access the dashboard directly via the Public IP **without appendi
 docker run -d \
   --name voice-analytics \
   --env-file .env \
+  -e HOST=0.0.0.0 \
+  -e RELOAD=False \
   -p 80:8000 \
   -v voice_uploads:/workspace/uploads \
   --restart unless-stopped \

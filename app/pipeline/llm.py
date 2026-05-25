@@ -37,8 +37,8 @@ def analyze_transcript(
     json_schema_example = """
   {
       "disposition_verification": {
-        "ai_disposition": "PAID | PROMISE_TO_PAY | REFUSED | NOT_REACHABLE | DISPUTED | PARTIAL_COMMITMENT | UNCLEAR",
-        "bank_disposition": "PAID | PROMISE_TO_PAY | REFUSED | NOT_REACHABLE | DISPUTED",
+        "d0_logged_disposition": "PAID | PROMISE_TO_PAY | REFUSED | NOT_REACHABLE | DISPUTED",
+        "d1_inferred_disposition": "PAID | PROMISE_TO_PAY | REFUSED | NOT_REACHABLE | DISPUTED | PARTIAL_COMMITMENT | UNCLEAR",
         "disposition_match": true,
         "mismatch_severity": "NONE | MINOR | SIGNIFICANT | CRITICAL",
         "mismatch_explanation": "Detailed validation explaining transcript statements versus the logged AI system disposition state",
@@ -124,6 +124,9 @@ The system must guide the customer sequentially through 5 distinct ordered conve
 ### Part 2: Audit Analytics & Analysis Tasks
 
 1. **Disposition Verification:** Infer the real-world operational result (**D1**) solely from the conversation flow: `PAID`, `PROMISE_TO_PAY`, `REFUSED`, `NOT_REACHABLE`, `DISPUTED`, `PARTIAL_COMMITMENT`, `UNCLEAR`.
+   - **Strict field assignment (no ambiguity allowed):**
+     - `d0_logged_disposition` MUST be set to the **exact value** of the Voice AI Post-Call Logged Disposition (D0) provided above as system context — i.e. `{d0_disposition}`. Do not re-interpret, infer, or modify D0. Copy it verbatim.
+     - `d1_inferred_disposition` MUST be set to the disposition you (the auditor) infer **strictly from the transcript content**, independent of D0.
    - Contrast inferred D1 with logged D0 to flag system discrepancies (`disposition_match`: true/false).
    - Evaluate `mismatch_severity`:
      - `NONE`: Perfect alignment.

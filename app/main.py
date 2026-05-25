@@ -152,7 +152,11 @@ async def get_call_history(request: Request):
                 "loan_account": report.get("loan_account", "—"),
                 "overdue_amount": report.get("overdue_amount", 0),
                 "processed_at": report.get("processed_at", ""),
-                "disposition": report.get("disposition_verification", {}).get("ai_disposition", "—"),
+                "disposition": (
+                    report.get("disposition_verification", {}).get("d1_inferred_disposition")
+                    or report.get("disposition_verification", {}).get("ai_disposition")
+                    or "—"
+                ),
             }
         )
 

@@ -103,6 +103,15 @@ async def run_pipeline_task(
         report["processed_at"] = datetime.now().isoformat() + "Z"
         report["transcript"] = transcript
 
+        # Authoritative D0 override — the form-submitted disposition_code is the
+        # ground truth for what was logged; never trust the LLM to echo it back.
+        # Also recompute disposition_match so the boolean stays consistent with D0/D1.
+        dispo = report.setdefault("disposition_verification", {})
+        dispo["d0_logged_disposition"] = disposition_code
+        d1 = (dispo.get("d1_inferred_disposition") or "").strip().upper()
+        d0 = (disposition_code or "").strip().upper()
+        dispo["disposition_match"] = bool(d0) and bool(d1) and d0 == d1
+
         log("Compliance Audit parsed successfully. 100% data integrity verified.")
         await asyncio.sleep(0.8)
 
