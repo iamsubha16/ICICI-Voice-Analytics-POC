@@ -489,8 +489,7 @@
 				<button class="nav-tab-btn active" data-tab="tab-call-intel" onclick="switchReportTab('tab-call-intel')">Call Intelligence</button>
 				<button class="nav-tab-btn" data-tab="tab-dispo-audit" onclick="switchReportTab('tab-dispo-audit')">Disposition Audit</button>
 				<button class="nav-tab-btn" data-tab="tab-transcript" onclick="switchReportTab('tab-transcript')">Transcript</button>
-				<button class="nav-tab-btn" data-tab="tab-script-timeline" onclick="switchReportTab('tab-script-timeline')">Transcript Audit</button>
-				<button class="nav-tab-btn" data-tab="tab-coaching" onclick="switchReportTab('tab-coaching')">Coaching Corner</button>
+				<button class="nav-tab-btn" data-tab="tab-performance" onclick="switchReportTab('tab-performance')">Performance &amp; Coaching</button>
 			</nav>
 
 			<!-- Tab Contents -->
@@ -532,10 +531,6 @@
 						<div class="summary-subcard border-teal-glow">
 							<h4 class="panel-card-title text-teal">Recommended Next Actions</h4>
 							<p class="summary-action-text font-outfit" id="report-next-action">Loading...</p>
-							<div class="overall-assess-group mt-3">
-								<span class="meta-label">Collections Efficacy</span>
-								<p class="efficacy-text" id="report-overall-feedback">Loading...</p>
-							</div>
 						</div>
 					</div>
 				</div>
@@ -543,32 +538,34 @@
 				<!-- TAB 2: DISPOSITION AUDIT -->
 				<div id="tab-dispo-audit" class="tab-panel hidden animate-fade-in">
 					<div class="dispo-audit-hero-panel" id="severity-badge-banner">
-						<div class="severity-badge-group">
-							<span class="severity-subtitle-label">VERIFICATION AUDIT RESULT</span>
-							<h2 class="severity-hero-badge" id="severity-hero-badge">CRITICAL MISMATCH</h2>
-						</div>
-						<div class="comparison-row-box">
-							<div class="comp-box">
-								<span class="comp-label">Logged (D0)</span>
-								<span class="comp-value text-warning" id="audit-d0-value">—</span>
+						<div class="dispo-audit-hero-top">
+							<div class="severity-badge-group">
+								<span class="severity-subtitle-label">VERIFICATION AUDIT RESULT</span>
+								<h2 class="severity-hero-badge" id="severity-hero-badge">CRITICAL MISMATCH</h2>
 							</div>
-							<div class="comp-arrow">⇄</div>
-							<div class="comp-box">
-								<span class="comp-label">Inferred (D1)</span>
-								<span class="comp-value text-danger" id="audit-d1-value">—</span>
+							<div class="comparison-row-box">
+								<div class="comp-box">
+									<span class="comp-label">Logged (D0)</span>
+									<span class="comp-value text-warning" id="audit-d0-value">—</span>
+								</div>
+								<div class="comp-arrow">⇄</div>
+								<div class="comp-box">
+									<span class="comp-label">Inferred (D1)</span>
+									<span class="comp-value text-danger" id="audit-d1-value">—</span>
+								</div>
 							</div>
 						</div>
-					</div>
-					<div class="audit-explanation-card">
-						<h4 class="panel-card-title">Auditor Findings & Analysis</h4>
-						<blockquote class="glossy-blockquote" id="audit-mismatch-explanation">Loading findings...</blockquote>
-						<div class="audit-confidence-group">
-							<span class="meta-label">LLM Confidence</span>
+						<div class="dispo-audit-confidence">
+							<span class="meta-label">Confidence Score</span>
 							<div class="progress-bar-thin">
 								<div class="progress-bar-fill bg-teal" id="confidence-bar-fill" style="width: 95%"></div>
 							</div>
 							<span class="confidence-numeric" id="audit-confidence-value">95%</span>
 						</div>
+					</div>
+					<div class="audit-explanation-card">
+						<h4 class="panel-card-title">Auditor Findings & Analysis</h4>
+						<blockquote class="glossy-blockquote" id="audit-mismatch-explanation">Loading findings...</blockquote>
 					</div>
 				</div>
 
@@ -581,8 +578,9 @@
 					<div class="transcript-chat-container" id="transcript-chat-turns"></div>
 				</div>
 
-				<!-- TAB 4: SCRIPT TIMELINE -->
-				<div id="tab-script-timeline" class="tab-panel hidden animate-fade-in">
+				<!-- TAB 4: PERFORMANCE & COACHING (merged: Quality Metrics + Script Compliance + Strengths + Deficiencies) -->
+				<div id="tab-performance" class="tab-panel hidden animate-fade-in">
+					<!-- Row 1: Quality Metrics + Script Compliance Check -->
 					<div class="timeline-row-dashboard">
 						<div class="scores-meter-sidebar">
 							<h4 class="panel-card-title text-center">Quality Metrics</h4>
@@ -625,11 +623,9 @@
 							<div class="compliance-nodes-scroller" id="compliance-stages-list"></div>
 						</div>
 					</div>
-				</div>
 
-				<!-- TAB 5: COACHING CORNER -->
-				<div id="tab-coaching" class="tab-panel hidden animate-fade-in">
-					<div class="dashboard-double-row">
+					<!-- Row 2: Agent Core Strengths + Areas of Deficiency -->
+					<div class="dashboard-double-row mt-4">
 						<div class="coaching-points-card border-green-glow">
 							<h4 class="panel-card-title text-green">Agent Core Strengths</h4>
 							<ul class="clean-bullet-list text-green-bullets" id="coaching-strengths"></ul>
@@ -639,6 +635,7 @@
 							<ul class="clean-bullet-list text-warning-bullets" id="coaching-improvements"></ul>
 						</div>
 					</div>
+
 					<!--
 					HIDDEN: Coaching Alternative Script / Suggested Dialogue section.
 					Hidden per product decision (May 2026). Restore by uncommenting this block
@@ -651,7 +648,6 @@
 						<blockquote class="glossy-blockquote" id="coaching-alternative"></blockquote>
 					</div>
 					-->
-
 				</div>
 			</div>
 			<!-- /.report-content-deck -->

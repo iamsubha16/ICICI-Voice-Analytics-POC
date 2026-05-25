@@ -45,7 +45,7 @@ def analyze_transcript(
         "confidence_score": 0.95
       },
       "refusal_analysis": {
-        "payment_status": "AGREED | PARTIAL | DEFERRED | REFUSED | UNCLEAR",
+        "payment_status": "AGREED | PARTIAL | DEFERRED | REFUSED",
         "primary_reason": "FINANCIAL_HARDSHIP | DISPUTES_AMOUNT | ALREADY_PAID | WILL_PAY_LATER | JOB_LOSS | MEDICAL_EMERGENCY | UNRESPONSIVE | OTHER",
         "reason_verbatim": "Direct quotation from transcript",
         "secondary_reasons": ["String array of compounding friction points"],

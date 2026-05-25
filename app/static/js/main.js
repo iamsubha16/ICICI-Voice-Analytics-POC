@@ -196,6 +196,10 @@ function showReportView() {
 	// Hide New Analysis header button — not relevant on the report page
 	const btnNew = document.getElementById("btn-new-analysis");
 	if (btnNew) btnNew.classList.add("hidden");
+
+	// Force-close the ingestion form panel — the form has no place on the call analysis page.
+	// (User can re-open it after going Back to dashboard.)
+	closeFormPanel();
 }
 
 function refreshCurrentReport() {
@@ -572,7 +576,8 @@ function renderAuditReport(report) {
 
 	// Next Action + Feedback
 	document.getElementById("report-next-action").textContent = intel.recommended_next_action || "Standard follow-up procedure.";
-	document.getElementById("report-overall-feedback").textContent = intel.overall_feedback || "Compliance audit complete.";
+	// REMOVED: Collections Efficacy block was deleted from the UI; its write target no longer exists.
+	// document.getElementById("report-overall-feedback").textContent = intel.overall_feedback || "Compliance audit complete.";
 
 	// ---- TAB 2: DISPOSITION AUDIT ----
 	// New field names take precedence; legacy names kept as fallback for reports
@@ -623,19 +628,20 @@ function renderAuditReport(report) {
 	const quality = report.agent_quality || {};
 	const scores = quality.scores || {};
 
-	document.getElementById("gauge-composite").textContent = scores.composite_score || "—";
+	// Scores from the LLM are floats in [0,1]. Display everything on a 0–100 scale.
+	const compositeVal = Math.round((scores.composite_score || 0) * 100);
+	document.getElementById("gauge-composite").textContent = scores.composite_score != null ? compositeVal : "—";
 
-	// Scores are floats in [0,1] from the LLM — multiply by 100 to render bar width as a percentage.
 	const flowVal = Math.round((scores.flow_correctness || 0) * 100);
-	document.getElementById("gauge-flow").textContent = (scores.flow_correctness || 0) + "/1";
+	document.getElementById("gauge-flow").textContent = flowVal + "/100";
 	document.getElementById("slider-flow-fill").style.width = flowVal + "%";
 
 	const handVal = Math.round((scores.response_handling || 0) * 100);
-	document.getElementById("gauge-handling").textContent = (scores.response_handling || 0) + "/1";
+	document.getElementById("gauge-handling").textContent = handVal + "/100";
 	document.getElementById("slider-handling-fill").style.width = handVal + "%";
 
 	const qualVal = Math.round((scores.call_quality || 0) * 100);
-	document.getElementById("gauge-quality").textContent = (scores.call_quality || 0) + "/1";
+	document.getElementById("gauge-quality").textContent = qualVal + "/100";
 	document.getElementById("slider-quality-fill").style.width = qualVal + "%";
 
 	// Stage nodes
