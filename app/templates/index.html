@@ -515,11 +515,54 @@
 					<div class="dashboard-double-row">
 						<div class="summary-subcard">
 							<h4 class="panel-card-title">Key Points</h4>
-							<div class="chips-list-group" id="report-pain-points"></div>
+							<ul class="clean-bullet-list" id="report-pain-points"></ul>
 						</div>
-						<div class="summary-subcard">
-							<h4 class="panel-card-title">Notable Observations</h4>
-							<ul class="clean-bullet-list" id="report-observations"></ul>
+						<!-- id="report-propensity-card" is reserved for future show/hide logic
+						     (e.g. hiding the card when no propensity_to_pay data exists). Currently
+						     unused by JS — every child element is targeted directly by its own id. -->
+						<div class="summary-subcard propensity-card" id="report-propensity-card">
+							<h4 class="panel-card-title">Propensity to Pay</h4>
+
+							<div class="propensity-top-row">
+								<div class="propensity-rating-group">
+									<span class="propensity-sublabel">Overall rating</span>
+									<span class="propensity-rating-badge" id="propensity-rating">—</span>
+								</div>
+								<div class="propensity-refusal-group">
+									<span class="propensity-sublabel">Refusal type</span>
+									<span class="propensity-refusal-pill" id="propensity-refusal-type">—</span>
+								</div>
+							</div>
+
+							<div class="propensity-gauge-wrapper">
+								<div class="propensity-gauge-track">
+									<div class="propensity-gauge-marker" id="propensity-gauge-marker" style="left: 0%"></div>
+								</div>
+								<div class="propensity-gauge-scale">
+									<span>Low</span><span>Medium</span><span>High</span>
+								</div>
+							</div>
+
+							<div class="propensity-signals">
+								<div class="propensity-signal-row">
+									<span class="propensity-signal-label">Engagement</span>
+									<span class="propensity-signal-value" id="propensity-engagement">—</span>
+								</div>
+								<div class="propensity-signal-row">
+									<span class="propensity-signal-label">Debt acknowledgment</span>
+									<span class="propensity-signal-value" id="propensity-debt-ack">—</span>
+								</div>
+								<div class="propensity-signal-row">
+									<span class="propensity-signal-label">Commitment secured</span>
+									<span class="propensity-signal-value" id="propensity-commitment">—</span>
+								</div>
+								<div class="propensity-signal-row">
+									<span class="propensity-signal-label">Hard refusal</span>
+									<span class="propensity-signal-value" id="propensity-hard-refusal">—</span>
+								</div>
+							</div>
+
+							<div class="propensity-retry-hint" id="propensity-retry-hint">—</div>
 						</div>
 					</div>
 

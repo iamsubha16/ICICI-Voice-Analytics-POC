@@ -542,27 +542,19 @@ function renderAuditReport(report) {
 	const intel = report.call_intelligence || {};
 	document.getElementById("report-summary-text").textContent = intel.call_summary || "No summary available.";
 
-	// Pain Points
+	// Key Points (bullet list — chip styling was deprecated)
 	const painContainer = document.getElementById("report-pain-points");
 	painContainer.innerHTML = "";
 	(intel.key_pain_points || []).forEach((pt) => {
-		const chip = document.createElement("span");
-		chip.className = "chip-item";
-		chip.textContent = pt;
-		painContainer.appendChild(chip);
+		const li = document.createElement("li");
+		li.textContent = pt;
+		painContainer.appendChild(li);
 	});
 	if (!painContainer.innerHTML)
-		painContainer.innerHTML = "<span class='text-muted' style='font-size:0.78rem'>No pain points flagged.</span>";
+		painContainer.innerHTML = "<li class='text-muted' style='font-size:0.78rem'>No key points flagged.</li>";
 
-	// Observations
-	const obsContainer = document.getElementById("report-observations");
-	obsContainer.innerHTML = "";
-	(intel.notable_observations || []).forEach((obs) => {
-		const li = document.createElement("li");
-		li.textContent = obs;
-		obsContainer.appendChild(li);
-	});
-	if (!obsContainer.innerHTML) obsContainer.innerHTML = "<li class='text-muted'>No special observations.</li>";
+	// Populate the dark Propensity to Pay card (replaces the old Notable Observations block).
+	renderPropensityCard(report);
 
 	// Missed Opportunities
 	const missedContainer = document.getElementById("report-missed-opts");
@@ -742,6 +734,76 @@ function renderTranscriptTurns(containerId, transcript, limit) {
 		moreNote.textContent = `+${transcript.length - limit} more turns — view full transcript tab`;
 		container.appendChild(moreNote);
 	}
+}
+
+// ============================================================
+// 8b. PROPENSITY TO PAY CARD (Call Intelligence tab)
+// ============================================================
+function renderPropensityCard(report) {
+	const p = report.propensity_to_pay || {};
+	const signals = p.signals || {};
+
+	// Overall rating badge — color by rating using the shared .badge-* system
+	const ratingEl = document.getElementById("propensity-rating");
+	const rating = (p.overall_rating || "—").toUpperCase();
+	ratingEl.textContent = rating === "—" ? "—" : rating.charAt(0) + rating.slice(1).toLowerCase();
+	ratingEl.className = "propensity-rating-badge " + propensityRatingBadge(rating);
+
+	// Refusal type pill (always the same muted look — content varies)
+	document.getElementById("propensity-refusal-type").textContent =
+		formatPropensityValue(p.refusal_type) || "—";
+
+	// Gauge marker position (clamp 0..1; default to 0 for missing)
+	const score = clamp01(p.score);
+	document.getElementById("propensity-gauge-marker").style.left = score * 100 + "%";
+
+	// 4 signal rows — each picks a .badge-{green,warning,danger,muted} class
+	paintSignal("propensity-engagement", signals.engagement, {
+		FULL: "badge-green", PARTIAL: "badge-warning", LOW: "badge-warning", NONE: "badge-danger",
+	});
+	paintSignal("propensity-debt-ack", signals.debt_acknowledgment, {
+		CONFIRMED: "badge-green", DENIED: "badge-danger", UNCLEAR: "badge-warning", NOT_ADDRESSED: "badge-muted",
+	});
+	paintSignal("propensity-commitment", signals.commitment_secured, {
+		FIRM: "badge-green", PARTIAL: "badge-warning", NONE: "badge-danger",
+	});
+	paintSignal("propensity-hard-refusal", signals.hard_refusal, {
+		YES: "badge-danger", NO: "badge-green",
+	});
+
+	// Retry hint derived purely from hard_refusal
+	const hr = (signals.hard_refusal || "").toUpperCase();
+	const hint = document.getElementById("propensity-retry-hint");
+	if (hr === "NO") hint.textContent = "Retry recommended — no hard refusal detected";
+	else if (hr === "YES") hint.textContent = "Escalate or apply cool-off period — hard refusal detected";
+	else hint.textContent = "—";
+}
+
+function propensityRatingBadge(r) {
+	if (r === "HIGH") return "badge-green";
+	if (r === "MEDIUM") return "badge-warning";
+	if (r === "LOW") return "badge-danger";
+	return "badge-muted";
+}
+
+function paintSignal(elId, raw, tone) {
+	const el = document.getElementById(elId);
+	if (!el) return;
+	const val = (raw || "").toUpperCase();
+	el.textContent = formatPropensityValue(raw) || "—";
+	const cls = tone[val] || "badge-muted";
+	el.className = "propensity-signal-value " + cls;
+}
+
+function formatPropensityValue(v) {
+	if (!v) return "";
+	return v.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function clamp01(n) {
+	const x = parseFloat(n);
+	if (!isFinite(x)) return 0;
+	return Math.max(0, Math.min(1, x));
 }
 
 // ============================================================

@@ -334,7 +334,7 @@ body {
     max-width: 1600px;
     margin: 0 auto;
     width: 100%;
-    flex: 1;
+    flex: none;           /* do not stretch to fill viewport height */
     align-items: flex-start;
 }
 
@@ -745,7 +745,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    min-height: 500px;
+    /* min-height: 500px;  removed — caused excessive trailing space on the report view */
     flex: 1;
     min-width: 0;
 }
@@ -754,7 +754,7 @@ body {
     background-color: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    flex: 1;
+    flex: none;           /* size to content, not to available panel height */
     padding: 1.5rem;
     box-shadow: var(--shadow-sm);
     display: flex;
@@ -2116,6 +2116,133 @@ body {
     padding-top: 0.8rem;
     line-height: 1.5;
     text-align: center;
+}
+
+/* ============================================================
+   Propensity to Pay Card (light, in Call Intelligence)
+   Reuses .summary-subcard container, .panel-card-title heading,
+   and the .badge-{green,warning,danger,muted} system for status pills.
+   ============================================================ */
+.propensity-card .panel-card-title {
+    margin-bottom: 0.85rem;
+}
+
+.propensity-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+}
+
+.propensity-sublabel {
+    display: block;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.propensity-refusal-group { text-align: right; }
+
+/* Hero rating badge — slightly larger than standard .badge-* for visual hierarchy.
+   Color is provided by the appended .badge-{green,warning,danger,muted} class. */
+.propensity-rating-badge {
+    display: inline-block;
+    padding: 0.32rem 0.75rem;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.propensity-refusal-pill {
+    display: inline-block;
+    padding: 0.24rem 0.65rem;
+    border-radius: 100px;
+    background: var(--bg-muted);
+    border: 1px solid var(--border);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+/* Gauge — the red→amber→green gradient is *semantic* (left=low, right=high),
+   so it earns its own styling. Uses the design's semantic color tokens. */
+.propensity-gauge-wrapper { margin: 0.4rem 0 1rem; }
+
+.propensity-gauge-track {
+    position: relative;
+    height: 6px;
+    border-radius: 100px;
+    background: linear-gradient(90deg, var(--danger) 0%, var(--warning) 50%, var(--green) 100%);
+    opacity: 0.55;
+}
+
+.propensity-gauge-marker {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    background: var(--bg-surface);
+    border: 2px solid var(--teal);
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+    transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.propensity-gauge-scale {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.4rem;
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* 4 signal rows */
+.propensity-signals {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+}
+
+.propensity-signal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.propensity-signal-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* Signal badges piggyback the existing .badge-* system.
+   These rules just override the .badge size so they read as small chips. */
+.propensity-signal-value {
+    padding: 0.18rem 0.55rem;
+    border-radius: 100px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.propensity-retry-hint {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
 }
 
 /* ============================================================

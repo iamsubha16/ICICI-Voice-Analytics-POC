@@ -81,6 +81,18 @@ def analyze_transcript(
         "notable_observations": ["Unique conversational anomalies, user behavior observations, or structural TTS glitches"],
         "recommended_next_action": "Operational recommendations for the collections strategy team (e.g., issue human callback, trigger automated payment SMS link, flag for dispute review panel)",
         "overall_feedback": "2-3 sentences evaluating the systemic effectiveness of the automated conversational agent during the interaction."
+      },
+      "propensity_to_pay": {
+        "overall_rating": "LOW | MEDIUM | HIGH",
+        "score": 0.0,
+        "refusal_type": "CIRCUMSTANTIAL | CATEGORICAL | NONE | UNCLEAR",
+        "signals": {
+          "engagement": "FULL | PARTIAL | LOW | NONE",
+          "debt_acknowledgment": "CONFIRMED | DENIED | UNCLEAR | NOT_ADDRESSED",
+          "commitment_secured": "FIRM | PARTIAL | NONE",
+          "hard_refusal": "YES | NO"
+        },
+        "rationale": "1-sentence reasoning for the overall_rating, citing which signals drove it."
       }
     }
   """
@@ -146,6 +158,51 @@ The system must guide the customer sequentially through 5 distinct ordered conve
    - Escalate to `HIGH` if the customer exhibits extreme agitation, voices legal/regulatory pushback, triggers human-handoff overrides, or details a severe dispute.
 
 *IMPORTANT*: You must check if the call was disconnected mid-conversation. If the transcript ends abruptly without a proper closing, flag it as required.
+
+---
+
+### Part 3: Propensity to Pay Assessment
+
+Independently from disposition logic and script compliance, assess the customer's likelihood to pay using 4 universal signals that apply to ANY collections call, regardless of refusal reason or call outcome.
+
+1. **engagement** — Did the customer stay engaged and respond throughout the call?
+   - `FULL`:    Active back-and-forth; the customer answered clearly and stayed on the line.
+   - `PARTIAL`: The customer responded but with short answers or noticeable silences.
+   - `LOW`:     Mostly silent or monosyllabic.
+   - `NONE`:    Customer disengaged, hung up, or did not respond meaningfully.
+
+2. **debt_acknowledgment** — Did the customer confirm they owe the amount?
+   - `CONFIRMED`:     Customer explicitly acknowledged the overdue debt.
+   - `DENIED`:        Customer disputed the debt or the amount.
+   - `UNCLEAR`:       Customer's acknowledgment was ambiguous.
+   - `NOT_ADDRESSED`: Topic of debt acknowledgment was not raised in the call.
+
+3. **commitment_secured** — Did the agent obtain a payment commitment?
+   - `FIRM`:    Specific commitment with date, amount, AND method.
+   - `PARTIAL`: Vague intent ("I'll pay soon", "let me see").
+   - `NONE`:    No commitment of any kind.
+
+4. **hard_refusal** — Did the customer categorically refuse to pay WITHOUT giving a reason?
+   - `YES`: Flat refusal on principle ("I won't pay", "I refuse").
+   - `NO`:  Customer gave a reason (salary delay, hardship, etc.) OR did not refuse.
+
+Additionally:
+
+- **`refusal_type`** — Classify any refusal observed:
+  - `CIRCUMSTANTIAL`: Tied to a specific cause (salary delay, job loss, medical emergency, hardship).
+  - `CATEGORICAL`:    Refusal on principle (won't pay, disputes the debt entirely).
+  - `NONE`:           No refusal in the call.
+  - `UNCLEAR`:        Ambiguous.
+
+- **`overall_rating`** (`LOW` | `MEDIUM` | `HIGH`) — Aggregate likelihood of payment in the near term.
+
+- **`score`** (0.0 to 1.0) — Continuous propensity score for fine-grained positioning. Roughly: 0.00–0.33 → `LOW`, 0.34–0.66 → `MEDIUM`, 0.67–1.00 → `HIGH`.
+
+- **`rationale`** — A single sentence citing which signals drove your `overall_rating`.
+
+**IMPORTANT:**
+- These signals are independent of `disposition_verification`. A `REFUSED` disposition can still be `MEDIUM` or `HIGH` propensity if the refusal is `CIRCUMSTANTIAL` and other signals are strong.
+- The retry hint shown to the operator is derived in the UI directly from `hard_refusal` — `NO` → "retry recommended", `YES` → "escalate or apply cool-off". Make sure `hard_refusal` strictly reflects the absence/presence of categorical refusal, NOT the disposition.
 
 ---
 
