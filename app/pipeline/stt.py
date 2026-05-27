@@ -161,8 +161,8 @@ def transcribe_audio(audio_path: str, filename: str, d0_notes: str = "", d0_disp
     status_headers = {"api-subscription-key": Config.SARVAM_API_KEY}
 
     output_files = []
-    max_polls = 40
-    poll_interval = 2.0
+    max_polls = 100
+    poll_interval = 3.0
     completed = False
 
     for i in range(max_polls):
