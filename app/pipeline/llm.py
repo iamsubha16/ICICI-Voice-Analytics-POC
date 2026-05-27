@@ -42,7 +42,22 @@ def analyze_transcript(
         "disposition_match": true,
         "mismatch_severity": "NONE | MINOR | SIGNIFICANT | CRITICAL",
         "mismatch_explanation": "Detailed validation explaining transcript statements versus the logged AI system disposition state",
-        "confidence_score": 0.95
+        "confidence_score": 0.95,
+        "resolution_intelligence": {
+          "payment_horizon": {
+            "label": "In 3 Days | Tomorrow | Today | In a week | Next month | No timeline stated",
+            "promised_date": "YYYY-MM-DD or null",
+            "days_from_call": 3
+          },
+          "promised_amount": {
+            "amount": 15500.0,
+            "is_overdue_baseline": true,
+            "note": "Full overdue used as baseline — no specific amount mentioned | Customer specified ₹X | Partial ₹X discussed | Waiver/discount requested | Settlement ₹X discussed"
+          },
+          "primary_barrier": "FINANCIAL_HARDSHIP | MEDICAL_EMERGENCY | SERVICE_DISPUTE | ALREADY_PAID | WRONG_NUMBER | OTHER | null",
+          "customer_sentiment": "COOPERATIVE | NEUTRAL | AGITATED | RESISTANT | HOSTILE",
+          "primary_disposition_reason": "Operational narrative: what specifically happened in this call that led to the outcome"
+        }
       },
       "refusal_analysis": {
         "payment_status": "AGREED | PARTIAL | DEFERRED | REFUSED",
@@ -158,6 +173,34 @@ The system must guide the customer sequentially through 5 distinct ordered conve
    - Escalate to `HIGH` if the customer exhibits extreme agitation, voices legal/regulatory pushback, triggers human-handoff overrides, or details a severe dispute.
 
 *IMPORTANT*: You must check if the call was disconnected mid-conversation. If the transcript ends abruptly without a proper closing, flag it as required.
+
+5. **Resolution Intelligence Extraction:**
+   Populate `disposition_verification.resolution_intelligence` with **four universal call-level signals** extracted from the transcript. These apply to EVERY call regardless of outcome — do not skip or conditionally omit any field.
+
+   **`payment_horizon`** — When is the customer expected to pay? Extract this for ALL call outcomes.
+   - `label`: A natural-language horizon string. Use the customer's own framing where possible — *"Today"*, *"Tomorrow"*, *"In 3 Days"*, *"In a week"*, *"Next month"*, *"No timeline stated"*. If the customer used relative Hinglish (*"kal"* = Tomorrow, *"parso"* = In 2 Days, *"agle hafte"* = In a week, *"mahine ke baad"* = In a month), translate to the equivalent English label.
+   - `promised_date`: Compute an absolute `YYYY-MM-DD` date when possible. If only a relative label was captured and the absolute date cannot be reliably determined, set `null`.
+   - `days_from_call`: Integer. Days from the call date to `promised_date`. Set `null` if `promised_date` is null.
+   - If there is no timing information whatsoever (e.g., call disconnected, flat refusal, unreachable), set `label` to `"No timeline stated"` and both date fields to `null`.
+
+   **`promised_amount`** — What INR amount is associated with this call outcome?
+   - `amount`: Always populate this field — it must never be null.
+     - If the customer explicitly stated an amount (full or partial), use that value.
+     - If a waiver, discount, or settlement figure was discussed, use the agreed/requested figure.
+     - If NO specific amount was mentioned in the conversation, use the prescribed overdue amount ({overdue_amount} INR) as the baseline.
+   - `is_overdue_baseline`: Set to `true` only when the `amount` was NOT explicitly stated and you are defaulting to the overdue amount. Set `false` when the customer or agent mentioned a specific figure.
+   - `note`: A brief phrase — one of: *"Full overdue used as baseline"*, *"Customer specified ₹X"*, *"Partial ₹X discussed"*, *"Waiver/discount requested"*, *"Settlement ₹X discussed"*, or *"Minimum payable discussed"*.
+
+   **`primary_barrier`** — What was the single biggest obstacle to payment on this call?
+   - Use one of: `JOB_LOSS`, `MEDICAL_EMERGENCY`, `DEMISE`, `SERVICE_DISPUTE`, `ALREADY_PAID`, `WRONG_NUMBER`, `OTHER`.
+   - Set to `null` (the JSON null value, not the string "null") if there was no barrier — i.e. the customer expressed willingness to pay, raised no objection, or agreed to pay without friction.
+   - This field is intentionally null-able: a null barrier is a positive signal, not missing data.
+
+   **`customer_sentiment`** — What was the customer's overall emotional tone and cooperativeness during the call?
+   - Always populate. Choose the single best-fit value: `COOPERATIVE`, `NEUTRAL`, `AGITATED`, `RESISTANT`, or `HOSTILE`.
+   - This is independent of the call outcome — a customer can be COOPERATIVE yet unable to pay due to hardship.
+
+   **`primary_disposition_reason`** — A single, operationally specific sentence describing WHY this outcome occurred. Not a restatement of the disposition code — the actual narrative cause (e.g., *"Customer confirmed salary credit on 31st May and committed to full payment the following morning."* or *"Customer stated the account holder is hospitalised and expressed agitation at repeated automated calls."*).
 
 ---
 

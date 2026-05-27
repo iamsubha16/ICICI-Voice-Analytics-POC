@@ -2528,6 +2528,105 @@ body {
 }
 
 /* ============================================================
+   Resolution Intelligence Card (Disposition Audit tab)
+   Fixed 4-box layout — always rendered regardless of outcome.
+   ============================================================ */
+.resolution-intel-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 0.75rem;
+    background: var(--bg-subtle);
+}
+
+/* --- Header --- */
+.ri-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+}
+
+.ri-header-icon {
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--teal-bg);
+    color: var(--teal);
+}
+.ri-header-icon svg { width: 1rem; height: 1rem; }
+
+.ri-section-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* --- KPI Grid — 4 equal columns --- */
+.ri-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
+}
+
+.ri-kpi-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.ri-kpi-label {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.1rem;
+}
+
+.ri-kpi-value {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--text-primary);
+}
+
+/* Per-value colour modifiers (set by JS, not cascaded from parent) */
+.ri-val-teal    { color: var(--teal); }
+.ri-val-green   { color: var(--green); }
+.ri-val-warning { color: var(--warning); }
+.ri-val-danger  { color: var(--danger); }
+.ri-val-muted   { color: var(--text-secondary); }
+
+.ri-kpi-sub {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    line-height: 1.3;
+}
+
+/* --- Context narrative --- */
+.ri-context {
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+    font-style: italic;
+}
+
+/* ============================================================
    Scrollbar
    ============================================================ */
 ::-webkit-scrollbar {

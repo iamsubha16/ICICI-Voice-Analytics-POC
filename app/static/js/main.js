@@ -613,6 +613,9 @@ function renderAuditReport(report) {
 		}
 	}
 
+	// Resolution Intelligence card (morphs based on PTP vs Refusal outcome)
+	renderResolutionIntelligence(report);
+
 	// ---- TAB 3: FULL TRANSCRIPT ----
 	renderTranscriptTurns("transcript-chat-turns", report.transcript || []);
 
@@ -804,6 +807,82 @@ function clamp01(n) {
 	const x = parseFloat(n);
 	if (!isFinite(x)) return 0;
 	return Math.max(0, Math.min(1, x));
+}
+
+// ============================================================
+// 8c. RESOLUTION INTELLIGENCE CARD (Disposition Audit tab)
+// Always renders all 4 universal call signals regardless of outcome type.
+// ============================================================
+function renderResolutionIntelligence(report) {
+	const dv = report.disposition_verification || {};
+	const ri = dv.resolution_intelligence || {};
+
+	// ── PAYMENT HORIZON ──────────────────────────────────────
+	const ph = ri.payment_horizon || {};
+	const horizonEl    = document.getElementById("ri-horizon-value");
+	const horizonSubEl = document.getElementById("ri-horizon-sub");
+
+	horizonEl.textContent = ph.label || "No timeline stated";
+	if (ph.promised_date) {
+		horizonSubEl.textContent = "Target: " + riFormatDate(ph.promised_date);
+	} else if (ph.days_from_call != null) {
+		horizonSubEl.textContent = ph.days_from_call === 0 ? "Due today" : "~" + ph.days_from_call + " day(s) away";
+	} else {
+		horizonSubEl.textContent = "No specific date";
+	}
+
+	// Colour the horizon value: teal if there's a date/days, muted if none
+	horizonEl.className = "ri-kpi-value " +
+		((ph.promised_date || ph.days_from_call != null) ? "ri-val-teal" : "ri-val-muted");
+
+	// ── PROMISED AMOUNT ───────────────────────────────────────
+	const pa = ri.promised_amount || {};
+	const amountRaw = pa.amount != null ? pa.amount : (report.overdue_amount || null);
+	document.getElementById("ri-amount-value").textContent =
+		amountRaw != null ? "₹" + Number(amountRaw).toLocaleString("en-IN") : "—";
+	document.getElementById("ri-amount-sub").textContent =
+		pa.note || (pa.is_overdue_baseline ? "Full overdue (baseline)" : "As discussed in call");
+
+	// ── PRIMARY BARRIER ───────────────────────────────────────
+	const barrierEl    = document.getElementById("ri-barrier-value");
+	const barrierSubEl = document.getElementById("ri-barrier-sub");
+	const barrierCode  = ri.primary_barrier;
+
+	if (!barrierCode || barrierCode === "null" || barrierCode === null) {
+		barrierEl.textContent  = "None";
+		barrierEl.className    = "ri-kpi-value ri-val-green";
+		barrierSubEl.textContent = "No friction detected";
+	} else {
+		barrierEl.textContent  = formatPropensityValue(barrierCode);
+		barrierEl.className    = "ri-kpi-value ri-val-warning";
+		barrierSubEl.textContent = "Primary friction point";
+	}
+
+	// ── CUSTOMER SENTIMENT ────────────────────────────────────
+	const sentimentEl    = document.getElementById("ri-sentiment-value");
+	const sentimentSubEl = document.getElementById("ri-sentiment-sub");
+	const sentiment      = (ri.customer_sentiment || "").toUpperCase();
+
+	sentimentEl.textContent = formatPropensityValue(ri.customer_sentiment) || "—";
+	sentimentEl.className   = "ri-kpi-value " + riSentimentClass(sentiment);
+	sentimentSubEl.textContent = "Demeanor during call";
+}
+
+function riFormatDate(dateStr) {
+	if (!dateStr) return "—";
+	try {
+		const d = new Date(dateStr);
+		return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+	} catch (_) { return dateStr; }
+}
+
+function riSentimentClass(s) {
+	if (s === "COOPERATIVE") return "ri-val-green";
+	if (s === "NEUTRAL")     return "ri-val-muted";
+	if (s === "AGITATED")    return "ri-val-warning";
+	if (s === "RESISTANT")   return "ri-val-danger";
+	if (s === "HOSTILE")     return "ri-val-danger";
+	return "ri-val-muted";
 }
 
 // ============================================================
